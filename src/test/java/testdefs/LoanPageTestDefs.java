@@ -7,11 +7,14 @@ import io.cucumber.java.en.When;
 
 import static com.codeborne.selenide.Selenide.open;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
 public class LoanPageTestDefs {
 
+    String monthlyPayment;
     LoanPageObjects calculator = new LoanPageObjects();
+    CalculateApiHelper calculateApi = new CalculateApiHelper();
 
     @Given("Open browser with loan page")
     public void openLoanApplicationPage() {
@@ -47,13 +50,13 @@ public class LoanPageTestDefs {
         calculator.loanMonthlyPayment.shouldNotBe(Condition.text(startAmount));
     }
 
-    @Then("Find out monthly payment and it should be {string}")
-    public void findOutMonthlyPayment(String monthlyPayment) {
+    @Then("Find out monthly payment and it should be equal to API response")
+    public void findOutMonthlyPaymentAndItShouldBeEqualToAPIResponse() {
         calculator.loanMonthlyPayment.shouldBe(Condition.visible);
         calculator.loanMonthlyPaymentLoader.shouldNotBe(Condition.visible);
-        String monthlyPaymentInPopup = calculator.loanMonthlyPayment.getText();
+        String monthlyPaymentInPopup = calculator.loanMonthlyPayment.getText().replace(",", ".");
         calculator.loanMonthlyPayment.shouldBe(Condition.visible);
-        assertThat(monthlyPaymentInPopup, is(monthlyPayment));
+        assertThat(monthlyPaymentInPopup, containsString(monthlyPayment));
     }
 
     @Then("Submit selected loan params")
@@ -67,5 +70,11 @@ public class LoanPageTestDefs {
     public void findOutLoanAmountOnMainPage(String loanAmount) {
         String loanAmountOnMainPage = calculator.loanPageLoanAmount.getText();
         assertThat(loanAmount, is(loanAmountOnMainPage));
+    }
+
+    @Given("Check calculate API response for amount {int} and month {int}")
+    public void checkCalculateAPIResponseForAmountAndMonth(int amount, int month) {
+        String response = calculateApi.calculateRequest(amount, month).getBody().toString();
+        this.monthlyPayment = calculateApi.parseCalculateResponse(response, "$.monthlyPayment");
     }
 }
